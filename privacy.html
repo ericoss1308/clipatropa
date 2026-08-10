@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade - Clipatropa</title>
+<style>
+  :root {
+    --preto: #0a0a0a;
+    --preto-suave: #141414;
+    --cinza-card: #171717;
+    --cinza-card-hover: #1c1c1c;
+    --cinza-borda: #262626;
+    --cinza-borda-forte: #3a3a3a;
+    --cinza-texto: #8f8f8f;
+    --cinza-texto-forte: #b5b5b5;
+    --branco: #f5f5f5;
+    --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code",
+      "Fira Code", Menlo, Consolas, "Courier New", monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--mono);
+    background: var(--preto);
+    color: var(--branco);
+    line-height: 1.6;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--cinza-borda);
+    text-align: center;
+  }
+
+  .badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--cinza-card);
+    border: 1px solid var(--cinza-borda-forte);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+    font-size: 18px;
+  }
+
+  .header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--branco);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+  }
+
+  .subtitulo {
+    margin: 0;
+    font-size: 11px;
+    color: var(--cinza-texto);
+    letter-spacing: 0.3px;
+  }
+
+  h2 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cinza-texto-forte);
+    margin: 36px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--cinza-borda);
+  }
+
+  p, li {
+    font-size: 14px;
+    color: var(--branco);
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 8px;
+  }
+
+  li::marker {
+    color: var(--cinza-texto);
+  }
+
+  a {
+    color: var(--branco);
+    text-decoration: underline;
+    text-decoration-color: var(--cinza-borda-forte);
+    text-underline-offset: 3px;
+  }
+
+  a:hover {
+    text-decoration-color: var(--branco);
+  }
+
+  .card {
+    background: var(--cinza-card);
+    border: 1px solid var(--cinza-borda);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 24px;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--cinza-texto-forte);
+    font-size: 13px;
+  }
+
+  .meta {
+    font-size: 11px;
+    color: var(--cinza-texto);
+    letter-spacing: 0.2px;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--cinza-borda);
+    font-size: 11px;
+    color: var(--cinza-texto);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="badge">🎬</div>
+    <h1>Clipatropa</h1>
+    <p class="subtitulo">Política de Privacidade</p>
+  </div>
+
+  <p class="meta">Última atualização: 10 de agosto de 2026</p>
+
+  <p>O Clipatropa é uma extensão para Google Chrome que detecta e baixa vídeos reproduzidos em páginas da web. Esta política explica como a extensão trata os dados do usuário.</p>
+
+  <div class="card">
+    <p>Resumo: o Clipatropa não coleta, armazena, transmite ou compartilha nenhum dado pessoal do usuário. Todo o processamento acontece localmente, no próprio navegador.</p>
+  </div>
+
+  <h2>Coleta de dados</h2>
+  <p>O Clipatropa <strong>não coleta, armazena, transmite ou compartilha</strong> nenhum dado pessoal do usuário com servidores externos. A extensão não possui backend, servidor próprio ou serviço de análise (analytics).</p>
+
+  <h2>Como a extensão funciona</h2>
+  <p>Todo o processamento acontece localmente, no navegador do próprio usuário:</p>
+  <ul>
+    <li>A detecção de vídeos (arquivos diretos, streams HLS e DASH) é feita observando o tráfego de rede e o conteúdo da página, apenas na aba em que o usuário está utilizando a extensão.</li>
+    <li>O download dos arquivos de vídeo/áudio é salvo diretamente no dispositivo do usuário, via API nativa do Chrome (chrome.downloads).</li>
+    <li>A conversão de áudio (MP3/WAV) é feita inteiramente no navegador, usando a Web Audio API e bibliotecas incluídas no próprio pacote da extensão — nenhum arquivo é enviado para fora do dispositivo do usuário.</li>
+  </ul>
+
+  <h2>Armazenamento local</h2>
+  <p>A extensão pode usar a API chrome.storage apenas para guardar preferências do usuário (como formato ou qualidade selecionados anteriormente) localmente no navegador. Esses dados não saem do dispositivo do usuário e não são acessíveis a terceiros.</p>
+
+  <h2>Permissões</h2>
+  <p>A extensão solicita acesso amplo a sites (host permissions) exclusivamente para poder detectar vídeos em qualquer página visitada pelo usuário. Esse acesso é usado somente para identificar conteúdo de mídia — nenhuma informação de navegação é registrada, armazenada ou compartilhada.</p>
+
+  <h2>Compartilhamento com terceiros</h2>
+  <p>O Clipatropa não vende, aluga ou compartilha dados de usuários com terceiros, sob nenhuma circunstância.</p>
+
+  <h2>Alterações nesta política</h2>
+  <p>Esta política pode ser atualizada eventualmente. Alterações significativas serão refletidas na data no topo desta página.</p>
+
+  <h2>Contato</h2>
+  <p>Dúvidas sobre esta política podem ser enviadas através da <a href="https://github.com/ericoss1308/clipatropa/issues">página de Issues do repositório no GitHub</a>.</p>
+
+  <footer>Clipatropa &middot; github.com/ericoss1308/clipatropa</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clipatropa — offscreen</title>
+  </head>
+  <body>
+    <!-- Documento invisível: só existe para rodar hls.js + <video> + <canvas>
+         fora do popup (que pode fechar a qualquer momento e mataria o
+         trabalho assíncrono de decodificação). -->
+    <script src="vendor/hls.min.js"></script>
+    <script src="offscreen.js"></script>
+  </body>
+</html>

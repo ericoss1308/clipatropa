@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>Clipatropa</title>
+  </head>
+  <body>
+    <header class="header">
+      <button id="history-btn" class="icon-btn history-btn" type="button" title="Histórico de downloads" aria-label="Histórico de downloads">
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button id="refresh-btn" class="icon-btn refresh-btn" type="button" title="Atualizar lista" aria-label="Atualizar lista">
+        <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M20 11A8 8 0 0 0 6.34 6.34M4 5v5h5M4 13a8 8 0 0 0 13.66 4.66M20 19v-5h-5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <img src="../icons/icon48.png" alt="Clipatropa" class="logo" />
+      <h1>Clipatropa</h1>
+      <p class="subtitulo" id="subtitulo-lista">// vídeos encontrados nesta página</p>
+      <p class="subtitulo hidden" id="subtitulo-historico">// histórico e nome de arquivo</p>
+    </header>
+
+    <main id="view-lista">
+      <div id="restricted" class="restricted hidden">
+        <span class="restricted-icone">🔒</span>
+        <p>
+          Download desativado para <strong id="restricted-nome">esta plataforma</strong>.<br />
+          Os termos de uso dela não permitem baixar vídeos de terceiros.
+        </p>
+      </div>
+
+      <ul id="video-list" class="video-list"></ul>
+
+      <p id="empty" class="empty">
+        Nenhum vídeo detectado nesta aba.<br />Reproduza um vídeo e reabra
+        este popup.
+      </p>
+    </main>
+
+    <main id="view-historico" class="hidden">
+      <div class="template-box">
+        <label for="template-input">nome do arquivo baixado</label>
+        <input id="template-input" type="text" spellcheck="false" placeholder="{titulo}" />
+        <p class="template-dica">placeholders: {titulo} {site} {data} {hora} {formato}</p>
+        <p class="template-preview" id="template-preview"></p>
+      </div>
+
+      <div class="historico-cabecalho">
+        <span>// últimos downloads</span>
+        <button id="clear-history-btn" class="link-btn" type="button">limpar</button>
+      </div>
+
+      <ul id="history-list" class="history-list"></ul>
+
+      <p id="history-empty" class="empty">Nenhum download ainda.</p>
+    </main>
+
+    <footer>
+      <small id="footer-texto">// clique no vídeo para escolher formato (MP4, MP3, WAV) e qualidade</small>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

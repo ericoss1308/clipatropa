@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Clipatropa",
+  "version": "2.7.8",
+  "description": "Detecta e baixa vídeos de páginas (mp4, HLS, DASH), com prévia, escolha de formato MP4/MP3/WAV e qualidade.",
+  "permissions": [
+    "downloads",
+    "storage",
+    "webRequest",
+    "activeTab",
+    "scripting",
+    "declarativeNetRequestWithHostAccess",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Clipatropa",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="downloader.css" />
+    <title>Baixando vídeo…</title>
+  </head>
+  <body>
+    <main class="card">
+      <header class="header">
+        <img src="../icons/icon48.png" alt="Clipatropa" class="logo" />
+        <h1>Clipatropa</h1>
+        <p class="subtitulo" id="subtitulo">Stream HLS</p>
+      </header>
+      <p id="video-title" class="video-title"></p>
+
+      <!-- Etapa: carregando playlist -->
+      <section id="step-loading">
+        <p class="muted">Analisando o stream…</p>
+      </section>
+
+      <!-- Etapa: escolha de qualidade (playlist master) -->
+      <section id="step-quality" class="hidden">
+        <h2>Escolha a qualidade</h2>
+        <ul id="quality-list" class="quality-list"></ul>
+      </section>
+
+      <!-- Etapa: progresso do download -->
+      <section id="step-progress" class="hidden">
+        <h2 id="progress-label">Baixando segmentos…</h2>
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <p id="progress-text" class="muted"></p>
+        <p class="muted warn">Não feche esta aba até o download terminar.</p>
+      </section>
+
+      <!-- Etapa: concluído -->
+      <section id="step-done" class="hidden">
+        <h2>✅ Download concluído</h2>
+        <p id="done-text" class="muted"></p>
+      </section>
+
+      <!-- Etapa: erro -->
+      <section id="step-error" class="hidden">
+        <h2>⚠️ Não foi possível baixar</h2>
+        <p id="error-text" class="muted"></p>
+      </section>
+
+      <p id="notes" class="notes hidden"></p>
+    </main>
+
+    <script src="vendor/lame.min.js"></script>
+    <script src="audio-convert.js"></script>
+    <script src="mp4-mux.js"></script>
+    <script src="downloader.js"></script>
+  </body>
+</html>

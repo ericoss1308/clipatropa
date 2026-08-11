@@ -103,6 +103,72 @@ function getTabMap(tabId) {
   return map;
 }
 
+// Faixas de áudio separadas de vídeos "arquivo direto" — o caso confirmado
+// na prática é Reels do Instagram: ao contrário do que a checagem original
+// de isInstagramAudioTrackUrl (mais abaixo) assumia, nem todo vídeo servido
+// como arquivo direto já traz o áudio embutido — alguns Reels chegam como
+// vídeo mudo + uma faixa de áudio à parte. Sem guardar essa faixa em algum
+// lugar, o MP4 baixado ficava sem som e a extração de MP3/WAV falhava (não
+// há áudio nenhum pra decodificar do vídeo mudo).
+//
+// Tenta primeiro casar por PASTA (mesma lógica de dedupeKeyFor/
+// folderKeyForUrl — funciona bem em CDNs como o do Reddit, que publicam
+// vídeo e áudio lado a lado no mesmo diretório). O CDN do Instagram, na
+// prática, NÃO segue esse padrão — vídeo e áudio de um mesmo Reels vêm de
+// caminhos com hash diferentes, então o casamento por pasta falha
+// silenciosamente. Por isso, se nenhum vídeo bater pela pasta, cai para o
+// vídeo "file" mais recente da aba ainda sem áudio: como o usuário só
+// costuma reproduzir um Reels por vez, a faixa de áudio que acabou de
+// chegar quase sempre pertence ao último vídeo detectado.
+const audioUrlByFolder = new Map(); // tabId -> Map(folderKey -> audioUrl)
+const AUDIO_URL_CACHE_MAX = 200;
+
+function getAudioFolderMap(tabId) {
+  let map = audioUrlByFolder.get(tabId);
+  if (!map) {
+    map = new Map();
+    audioUrlByFolder.set(tabId, map);
+  }
+  return map;
+}
+
+// Chamado quando a rede revela uma faixa de áudio separada. Guarda pra uso
+// futuro e, se algum vídeo "mudo" correspondente já estiver na lista, anexa
+// a faixa a ele imediatamente (cobre o caso do áudio chegar DEPOIS do vídeo).
+function rememberAudioUrl(tabId, audioUrl) {
+  const folderMap = getAudioFolderMap(tabId);
+  const key = folderKeyForUrl(audioUrl);
+  folderMap.set(key, audioUrl);
+  if (folderMap.size > AUDIO_URL_CACHE_MAX) {
+    folderMap.delete(folderMap.keys().next().value);
+  }
+
+  const videoMap = videosByTab.get(tabId);
+  if (!videoMap) return;
+
+  // 1ª tentativa: mesma pasta.
+  let matched = false;
+  for (const [vKey, info] of videoMap) {
+    if (info.kind === "file" && !info.audioUrl && folderKeyForUrl(info.url) === key) {
+      videoMap.set(vKey, { ...info, audioUrl });
+      matched = true;
+    }
+  }
+  if (matched) return;
+
+  // 2ª tentativa (fallback): o vídeo "file" mais recente ainda sem áudio —
+  // ver comentário acima sobre o CDN do Instagram não agrupar por pasta.
+  let lastKey = null;
+  for (const [vKey, info] of videoMap) {
+    if (info.kind === "file" && !info.audioUrl) lastKey = vKey;
+  }
+  if (lastKey != null) {
+    const info = videoMap.get(lastKey);
+    videoMap.set(lastKey, { ...info, audioUrl });
+  }
+}
+
+
 function extensionFromUrl(url) {
   try {
     const path = new URL(url).pathname;
@@ -437,6 +503,24 @@ async function addVideo(tabId, info) {
   if (info.kind === "file" && isKnownStreamComponentFolder(tabId, info.url)) return;
   if (await isDomainBlacklisted(info.url)) return;
 
+  // Se a faixa de áudio separada desse vídeo já foi vista antes (chegou
+  // primeiro que o próprio vídeo), anexa agora — ver rememberAudioUrl.
+  if (info.kind === "file" && !info.audioUrl) {
+    const folderMap = audioUrlByFolder.get(tabId);
+    if (folderMap) {
+      const knownAudio = folderMap.get(folderKeyForUrl(info.url));
+      if (knownAudio) {
+        info = { ...info, audioUrl: knownAudio };
+      } else if (folderMap.size) {
+        // Fallback: pasta não bateu (comum no CDN do Instagram) — usa a
+        // última faixa de áudio vista na aba, mesma lógica do fallback em
+        // rememberAudioUrl.
+        const lastAudio = [...folderMap.values()].pop();
+        if (lastAudio) info = { ...info, audioUrl: lastAudio };
+      }
+    }
+  }
+
   const map = getTabMap(tabId);
   const key = dedupeKeyFor(info.url, info.kind);
   const existing = map.get(key) || {};
@@ -527,6 +611,10 @@ chrome.webRequest.onHeadersReceived.addListener(
         source: "network",
         kind: "dash",
       });
+    } else if (isAudioType && !isSegment && !isTooSmall) {
+      // Faixa de áudio separada de um "arquivo direto" (comum em Reels do
+      // Instagram) — guarda em vez de descartar, ver rememberAudioUrl.
+      rememberAudioUrl(details.tabId, effectiveUrl);
     } else if (!isSegment && !isAudioType && !isTooSmall && !isDashComponentFile(details.url) && (isVideoType || looksLikeVideoUrl(details.url))) {
       const tabId = details.tabId;
       const url = effectiveUrl;
@@ -559,6 +647,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === "loading" && changeInfo.url) {
     videosByTab.delete(tabId);
     masterFoldersByTab.delete(tabId);
+    audioUrlByFolder.delete(tabId);
     updateRestrictionForTab(tabId, changeInfo.url);
     updateBadge(tabId);
   }
@@ -567,6 +656,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   videosByTab.delete(tabId);
   masterFoldersByTab.delete(tabId);
+  audioUrlByFolder.delete(tabId);
   restrictedByTab.delete(tabId);
 });
 

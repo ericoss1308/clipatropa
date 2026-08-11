@@ -402,7 +402,17 @@ async function obterQualidades(video, formato, tab) {
       return [
         {
           label: "Original",
-          onClick: () => abrirDownloader(video, tab, { format: "mp4", kind: "file", srcUrl: video.url }),
+          onClick: () =>
+            abrirDownloader(video, tab, {
+              format: "mp4",
+              kind: "file",
+              srcUrl: video.url,
+              // Alguns vídeos "arquivo direto" (Reels do Instagram, por
+              // exemplo) chegam mudos, com o áudio numa faixa separada —
+              // ver rememberAudioUrl em background.js. Quando detectada,
+              // repassa pro downloader juntar as duas.
+              audio: video.audioUrl || undefined,
+            }),
         },
       ];
     }
@@ -448,6 +458,10 @@ async function obterQualidades(video, formato, tab) {
           kind: video.kind,
           srcUrl: video.url,
           bitrate: br,
+          // Ver o mesmo comentário no bloco "mp4" acima: sem isso, um
+          // Reels mudo faz o decodeAudioData falhar por não haver áudio
+          // nenhum no vídeo — foi exatamente esse o bug reportado aqui.
+          audio: video.audioUrl || undefined,
         }),
     }));
   }
@@ -457,7 +471,12 @@ async function obterQualidades(video, formato, tab) {
     {
       label: "Qualidade original (PCM)",
       onClick: () =>
-        abrirDownloader(video, tab, { format: "wav", kind: video.kind, srcUrl: video.url }),
+        abrirDownloader(video, tab, {
+          format: "wav",
+          kind: video.kind,
+          srcUrl: video.url,
+          audio: video.audioUrl || undefined,
+        }),
     },
   ];
 }

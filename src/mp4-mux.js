@@ -209,3 +209,46 @@ function looksLikeFmp4(buffer) {
   const bytes = new Uint8Array(buffer, 0, 8);
   return readFourCC(bytes, 4) === "ftyp";
 }
+
+// Divide um arquivo MP4 COMPLETO (já baixado inteiro, não por playlist HLS)
+// em "init" (tudo antes do primeiro moof — ftyp+moov) e "fragmentos"
+// (cada trecho começando em um moof, até o próximo moof ou o fim do
+// arquivo) — no mesmo formato que muxFmp4 espera.
+//
+// Existe pra reaproveitar o mux acima em vídeos "arquivo direto" baixados
+// inteiros de uma vez (ex.: Reels do Instagram, que na prática usa o mesmo
+// empacotamento fragmentado CMAF por baixo, mesmo entregando um MP4
+// "completo" via range request em vez de uma playlist HLS). Lança erro se
+// não encontrar nenhum "moof" — nesse caso o arquivo é um MP4 clássico
+// (não fragmentado), que não é suportado por este mux; quem chamar deve
+// cair de volta para o fluxo de dois arquivos separados.
+function splitCompleteFmp4(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const topBoxes = [...iterateBoxes(bytes, 0, bytes.length)];
+
+  const firstMoofIndex = topBoxes.findIndex((b) => b.type === "moof");
+  if (firstMoofIndex === -1) {
+    throw new Error(
+      "Arquivo não é fMP4 fragmentado (nenhum box 'moof' encontrado) — remux automático não se aplica."
+    );
+  }
+
+  const initEnd = topBoxes[firstMoofIndex].start;
+  const initBuffer = bytes.slice(0, initEnd).buffer;
+
+  const fragBuffers = [];
+  for (let i = firstMoofIndex; i < topBoxes.length; i++) {
+    if (topBoxes[i].type !== "moof") continue;
+    const start = topBoxes[i].start;
+    let end = bytes.length;
+    for (let j = i + 1; j < topBoxes.length; j++) {
+      if (topBoxes[j].type === "moof") {
+        end = topBoxes[j].start;
+        break;
+      }
+    }
+    fragBuffers.push(bytes.slice(start, end).buffer);
+  }
+
+  return { initBuffer, fragBuffers };
+}

@@ -807,9 +807,15 @@ async function assertLikelyCompleteMp4(blob, ext) {
 // bitrate, já que a qualidade do áudio costuma ser igual entre variantes.
 async function buildSourceBlobForAudio() {
   if (kindParam === "file") {
-    progressLabelEl.textContent = "Baixando mídia…";
+    // Alguns vídeos "arquivo direto" (Reels do Instagram, por exemplo)
+    // chegam mudos, com o áudio numa faixa .mp4/.m4a separada detectada
+    // pelo background.js (ver rememberAudioUrl) e repassada aqui via
+    // audioParam. Quando existe, é ela quem tem o áudio de verdade — usar
+    // srcUrl (o vídeo mudo) faria o decodeAudioData falhar por não haver
+    // nenhuma trilha de áudio pra decodificar.
+    progressLabelEl.textContent = "Baixando áudio…";
     showStep("progress");
-    const res = await fetchDirectFile(srcUrl);
+    const res = await fetchDirectFile(audioParam || srcUrl);
     return await res.blob();
   }
 
@@ -1156,19 +1162,77 @@ async function init() {
 
     // Fluxo de vídeo (MP4).
     if (kindParam === "file") {
-      // Download direto de arquivo: normalmente tratado no popup, mas
-      // suportado aqui também para manter um único ponto de entrada.
       showStep("progress");
       progressLabelEl.textContent = "Baixando vídeo…";
       const res = await fetchDirectFile(srcUrl);
       const blob = await res.blob();
       const ext = extensionFromSrc(srcUrl);
       await assertLikelyCompleteMp4(blob, ext);
+
+      // Alguns vídeos "arquivo direto" (Reels do Instagram, por exemplo)
+      // chegam mudos — a faixa de áudio de verdade é um arquivo à parte
+      // (ver rememberAudioUrl em background.js), repassado aqui via
+      // audioParam. Tenta juntar os dois num único MP4 sem recodificar,
+      // reaproveitando o muxer de fMP4 (o Instagram usa esse mesmo
+      // empacotamento fragmentado por baixo, mesmo entregando um "arquivo
+      // completo" via range request em vez de playlist HLS — ver
+      // splitCompleteFmp4 em mp4-mux.js).
+      if (audioParam && ext === "mp4" && typeof splitCompleteFmp4 === "function" && typeof muxFmp4 === "function") {
+        try {
+          progressLabelEl.textContent = "Baixando áudio…";
+          const audioRes = await fetchDirectFile(audioParam);
+          const audioBlob = await audioRes.blob();
+
+          progressLabelEl.textContent = "Juntando vídeo e áudio…";
+          progressBarEl.style.width = "90%";
+          await new Promise((r) => setTimeout(r, 20));
+
+          const videoParts = splitCompleteFmp4(await blob.arrayBuffer());
+          const audioParts = splitCompleteFmp4(await audioBlob.arrayBuffer());
+          const muxedBlob = muxFmp4({
+            videoInit: videoParts.initBuffer,
+            videoFrags: videoParts.fragBuffers,
+            audioInit: audioParts.initBuffer,
+            audioFrags: audioParts.fragBuffers,
+          });
+
+          const filename = await buildFilename("mp4");
+          const objectUrl = URL.createObjectURL(muxedBlob);
+          await chrome.downloads.download({ url: objectUrl, filename });
+          recordDownloadHistory({ filename, size: muxedBlob.size, formato: "mp4" });
+          doneTextEl.textContent = `Arquivo "${filename}" (${formatSize(muxedBlob.size)}) enviado para a pasta de downloads — vídeo e áudio já juntos.`;
+          showStep("done");
+          return;
+        } catch (e) {
+          console.warn("Mux automático (arquivo direto) falhou, caindo para o fluxo de dois arquivos:", e);
+          // Segue para o fallback abaixo.
+        }
+      }
+
       const filename = await buildFilename(ext);
       const objectUrl = URL.createObjectURL(blob);
       await chrome.downloads.download({ url: objectUrl, filename });
       recordDownloadHistory({ filename, size: blob.size, formato: ext });
-      doneTextEl.textContent = `Arquivo "${filename}" (${formatSize(blob.size)}) enviado para a pasta de downloads.`;
+
+      if (audioParam) {
+        // Mux automático não suportado ou falhou (ver catch acima) — baixa
+        // os dois separados e avisa, para juntar manualmente se quiser
+        // (ex.: com FFmpeg).
+        progressLabelEl.textContent = "Baixando áudio…";
+        const audioRes = await fetchDirectFile(audioParam);
+        const audioBlob = await audioRes.blob();
+        const audioExt = extensionFromSrc(audioParam) || "m4a";
+        const audioFilename = await buildFilename(audioExt, "-audio");
+        const audioObjectUrl = URL.createObjectURL(audioBlob);
+        await chrome.downloads.download({ url: audioObjectUrl, filename: audioFilename });
+        recordDownloadHistory({ filename: audioFilename, size: audioBlob.size, formato: audioExt });
+        doneTextEl.textContent =
+          `Arquivo "${filename}" (${formatSize(blob.size)}) enviado para a pasta de downloads — ` +
+          `este vídeo veio sem áudio embutido, então a faixa de áudio foi salva à parte, ` +
+          `em "${audioFilename}" (${formatSize(audioBlob.size)}). Junte os dois (ex.: com FFmpeg) para ter um único arquivo com som.`;
+      } else {
+        doneTextEl.textContent = `Arquivo "${filename}" (${formatSize(blob.size)}) enviado para a pasta de downloads.`;
+      }
       showStep("done");
       return;
     }
